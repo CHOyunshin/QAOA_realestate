@@ -95,7 +95,11 @@ def get_QB(x, p, Q, beta, lmbd):
 
   return -1*value
 
+def get_QB_constraint(x, p, Q, beta, lmbd, Budget = 10):
+    x_, unit = np.zeros(p, dtype = int), np.identity(p, dtype = int)
+    x_[x.columns] = 1
+    value = lmbd * x_.T @ Q @ x_ + (1 - lmbd) * beta.T @ x_
+    # Budget Penalty 
+    penalty = (unit*x_ - Budget)**2
 
-
-
-
+    return -1*(value - penalty)

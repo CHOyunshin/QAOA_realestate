@@ -47,6 +47,9 @@ class SimulatedAnnealing:
     theta_zero = np.random.randint(2, size = p)
     obj = bf.get_QB
 
+    # 추가한 budget constraint in base function 
+    # obj = bf.get_QB_constraint 
+
     for j in schedule:
       tau = initial_t / (1 + alpha * j)
       for m in range(j):
@@ -57,10 +60,3 @@ class SimulatedAnnealing:
     result = self.x.iloc[:, np.where(theta_zero)[0]]
 
     return result
-
-
-
-
-
-
-
