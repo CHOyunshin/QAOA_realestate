@@ -19,9 +19,7 @@ CAPM은 서울시 내 113개 동을 대상으로 진행할 예정
 - rawdata_113dong: 113개 동의 10년간 서울시 아파트 거래 데이터
 - avgprice_month_113dong: 113개 동의 월별 동별 평균가격
 
-
-
-![image-20221201150222386](C:\Users\김지희\AppData\Roaming\Typora\typora-user-images\image-20221201150222386.png)
+![multivariate_CAPM](https://user-images.githubusercontent.com/109649288/204982507-a300c0d9-0920-4f70-9924-95f724600529.PNG)
 
 - R_i : 서울시 113개 동의 월별 동별 전월대비 평균가격 변화율
 
