@@ -34,13 +34,19 @@ class DWAVE_optimizer:
         Qubo = linear_qubo + quadratic_qubo
         cqm = ConstrainedQuadraticModel()
         cqm.set_objective(Qubo)
-        sampleset = self.sampler.sample_cqm(cqm)
         
-        result = sampleset.first[0]
-        result_list=list(zip(result.keys(), result.values()))
-        self.result = result_list
+        if type(k) == int:
+            n_asset = QuadraticModel()
+            for i in range(p):
+                n_asset += integer_list[i]
+            cqm.add_constraint(n_asset==k)
+        
+        sampleset = self.sampler.sample_cqm(cqm)
+        sampleset = sampleset.to_pandas_dataframe()
+        sampleset_true = sampleset[sampleset["is_feasible"]==True]
+        self.result = sampleset_true.loc[sampleset_true["energy"] == np.min(sampleset_true["energy"]),:].iloc[0,:p].tolist()
         self.sampleset = sampleset
-        return result_list
+        return self.result
 
 class SimulatedAnnealing:
   def __init__(self,
