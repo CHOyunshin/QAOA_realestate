@@ -17,8 +17,10 @@ class DWAVE_optimizer:
                 Q,
                 beta,
                 lamda=0.5,
-                k = None):
-        
+                k = None,
+                A = None,
+                b = None
+                ):
         p = len(Q)
         integer_list = []
         for i in range(p) :
@@ -40,14 +42,17 @@ class DWAVE_optimizer:
             for i in range(p):
                 n_asset += integer_list[i]
             cqm.add_constraint(n_asset==k)
-        
-        sampleset = self.sampler.sample_cqm(cqm)
-        sampleset = sampleset.to_pandas_dataframe()
-        sampleset_true = sampleset[sampleset["is_feasible"]==True]
-        self.result = sampleset_true.loc[sampleset_true["energy"] == np.min(sampleset_true["energy"]),:].iloc[0,:p].tolist()
-        self.sampleset = sampleset
-        return self.result
 
+        if A != None:
+            budget = QuadraticModel()
+            for i in range(p):
+                budget += A[i]*integer_list[i]
+            cqm.add_constraint(budget==b)
+        
+        self.sampleset = self.sampler.sample_cqm(cqm).record
+        sample_true = self.sampleset[[self.sampleset[i][4] for i in range(len(self.sampleset))]]
+        self.result = sample_true[[sample_true[i][1] for i in range(len(sample_true))] == np.min([sample_true[i][1] for i in range(len(sample_true))])][0][0].tolist()
+        
 class SimulatedAnnealing:
   def __init__(self,
                schedule_list = [100, 100, 100, 200, 200, 200, 200, 300, 300, 300, 300, 300, 400, 400, 400, 400, 400, 400],
@@ -62,6 +67,8 @@ class SimulatedAnnealing:
                beta,
                lamda=0.5,
                k = None,
+               A = None,
+               b = None
                ):
     schedule_list, k_flip, alpha, tau = self.schedule_list, self.k_flip, self.alpha, self.tau
     if k_flip % 2 != 0:
@@ -75,19 +82,24 @@ class SimulatedAnnealing:
         theta_temp = np.random.randint(2,size=p)
         for j in schedule_list:
             for m in range(j):
-                theta_star = bf.flip(k_flip, theta_temp, p)
-                if np.random.rand(1) <= min(1, np.exp((obj(theta_temp, Q = Q, beta = beta, lmbd = lamda)-obj(theta_temp, Q = Q, beta = beta, lmbd = lamda))/tau)):
+                if A != None :
+                    while (A@np.asarray(theta_star)<b) :
+                        theta_star = bf.flip(k_flip, theta_temp, p)
+                else: theta_star = bf.flip(k_flip, theta_temp, p)
+                if np.random.rand(1) <= min(1, np.exp((obj(theta_temp, Q = Q, beta = beta, lmbd = lamda)-obj(theta_star, Q = Q, beta = beta, lmbd = lamda))/tau)):
                     theta_temp = theta_star
                 theta_list += [theta_temp]
                 tau = alpha * tau
-
 
     elif type(k) == int :    
         theta_temp = bf.get_bin(np.random.choice(p,k,replace=False),p)
         for j in schedule_list:
             for m in range(j):
-                theta_star = bf.flip2(k_flip, theta_temp, p)
-                if np.random.rand(1) <= min(1, np.exp((obj(theta_temp, Q = Q, beta = beta, lmbd = lamda)-obj(theta_temp, Q = Q, beta = beta, lmbd = lamda))/tau)):
+                if A != None :
+                    while (A@np.asarray(theta_star)<b) :
+                        theta_star = bf.flip2(k_flip, theta_temp, p)
+                else: theta_star = bf.flip2(k_flip, theta_temp, p)                
+                if np.random.rand(1) <= min(1, np.exp((obj(theta_temp, Q = Q, beta = beta, lmbd = lamda)-obj(theta_star, Q = Q, beta = beta, lmbd = lamda))/tau)):
                     theta_temp = theta_star
                 theta_list += [theta_temp]
                 tau = alpha * tau
@@ -95,7 +107,6 @@ class SimulatedAnnealing:
     else : Exception("Wrong value at constraint. The constraint must be integer or None")
     
     result = theta_temp
-    self.result =result
+    self.result = (1.0*np.asarray(result)).tolist()
     self.theta_list = theta_list
-    return result
 
