@@ -1,5 +1,6 @@
 from dimod import ConstrainedQuadraticModel, Integer
 import numpy as np
+import pandas as pd
 from dwave.system import LeapHybridCQMSampler
 from sklearn.linear_model import LinearRegression
 
@@ -65,3 +66,32 @@ def dwave(x,y):
     aic_result = (len(data_x_one)* np.log(mse_result) - 10 *np.log(len(data_x_one)) + 2* len(data_x_one.columns))
     cn_result = cn(data_x_one)
     return result, mse_result, aic_result, cn_result
+
+
+def dwave_QUBO(Q,beta):
+    p = len(Q)
+
+    integer_list = []
+    for i in range(p) :
+        integer_list += [Integer(str("x")+str(i).zfill(3), upper_bound=1,lower_bound=0)]
+    
+    linear_qubo = 0
+    for i in range(p): 
+        linear_qubo += [beta[i]*integer_list[i]]
+    
+    quadratic_qubo = 0
+    for j in range(p):
+        for i in range(p):
+            quadratic_qubo += Q[i][j]*integer_list[i]*integer_list[j]
+    
+    Qubo = linear_qubo + quadratic_qubo
+    cqm = ConstrainedQuadraticModel()
+    cqm.set_objective(Qubo)
+    sampleset = sampler.sample_cqm(cqm)
+    
+    result = sampleset.first[0]
+    result_list=list(zip(result.keys(), result.values()))
+    
+    return result_list
+
+
